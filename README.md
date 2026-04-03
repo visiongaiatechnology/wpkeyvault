@@ -41,6 +41,10 @@ Built as the cryptographic backbone of the **VisionGaiaTechnology Sentinel ecosy
 
 ---
 
+<img width="1158" height="515" alt="{F8E458D8-9F16-4260-A914-6B825267D9B8}" src="https://github.com/user-attachments/assets/5703444b-1efb-46cd-abd3-c131d1ee6d88" />
+
+
+
 ## ⚡ The Problem With Standard WordPress Key Storage
 
 ```
