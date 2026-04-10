@@ -29,6 +29,14 @@
 
 ---
 
+
+## ⚠️ DISCLAIMER: EXPERIMENTAL R&D PROJECT
+
+This project is a **Proof of Concept (PoC)** Wordpress Security Layer. It is **not** a Enterprise Plugin, and can be unsafe.
+
+**Do not use this in critical production environments.** For enterprise-grade Key protection, we recommend established Solutions.
+
+
 ## 🔐 What is VGT Key Vault?
 
 WordPress stores API keys in plaintext. Every plugin, every theme, every integration dumps credentials directly into `wp_options` — readable by anyone with database access.
