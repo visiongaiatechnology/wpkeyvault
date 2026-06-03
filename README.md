@@ -13,6 +13,7 @@
 ### AES-256-GCM Cryptographic API Key Manager for WordPress
 
 [![License](https://img.shields.io/badge/License-AGPLv3-green?style=for-the-badge)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-3.1.0-brightgreen?style=for-the-badge)](#)
 [![PHP](https://img.shields.io/badge/PHP-8.0+-blue?style=for-the-badge&logo=php)](https://php.net)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0+-21759B?style=for-the-badge&logo=wordpress)](https://wordpress.org)
 [![Encryption](https://img.shields.io/badge/Encryption-AES--256--GCM-gold?style=for-the-badge)](#)
@@ -29,20 +30,35 @@
 
 ---
 
-
 ## ⚠️ DISCLAIMER: EXPERIMENTAL R&D PROJECT
 
-This project is a **Proof of Concept (PoC)** and part of ongoing research and development at
-VisionGaia Technology. It is **not** a certified or production-ready product.
+This project is a **Proof of Concept (PoC)** and part of ongoing research and development at VisionGaia Technology. It is **not** a certified or production-ready product.
 
-**Use at your own risk.** The software may contain security vulnerabilities, bugs, or
-unexpected behavior. It may break your environment if misconfigured or used improperly.
+**Use at your own risk.** The software may contain security vulnerabilities, bugs, or unexpected behavior. It may break your environment if misconfigured or used improperly.
 
-**Do not deploy in critical production environments** unless you have thoroughly audited
-the code and understand the implications. For enterprise-grade, verified protection,
-we recommend established and officially certified solutions.
+**Do not deploy in critical production environments** unless you have thoroughly audited the code and understand the implications. For enterprise-grade, verified protection, we recommend established and officially certified solutions.
 
 Found a vulnerability or have an improvement? **Open an issue or contact us.**
+
+---
+
+## 📋 Changelog — V3.1.0
+
+> **V3.1.0 is a comprehensive hardening upgrade.** Every change closes a concrete gap — no cosmetic version bumps.
+
+| Area | V3.0.0 | V3.1.0 |
+|---|---|---|
+| **Exception Handling** | `\RuntimeException` | `VaultException` — typed, catchable separately |
+| **Master Key Derivation** | `AUTH_SALT` + `SECURE_AUTH_KEY` only | All 8 WP salts + DB-generated fallback + `wp_hash()` anchor |
+| **Registry Integrity** | No type checks | `is_array()` + `is_string()` guards — fatal-safe on DB corruption |
+| **Admin HTTP Headers** | None | `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `X-XSS-Protection` |
+| **Option Name Sanitizing** | `sanitize_text_field()` (too permissive) | `preg_replace('/[^a-zA-Z0-9_\-]/', '')` + enforced prefix namespace |
+| **Error Feedback** | `saved`, `deleted`, `error_crypto` | + `error_input`, `error_delete` |
+| **Internationalization** | None | Full `esc_html_e()` / `__()` / `esc_js()` coverage |
+| **API Usage** | `get_key('vis_api_key_groq')` — full option name required | `get_key('groq_api_key')` — prefix added internally |
+| **UI Display** | Shows full prefix (`vis_api_key_groq`) | Strips prefix — shows only identifier (`groq_api_key`) |
+
+---
 
 ## 🔐 What is VGT Key Vault?
 
@@ -55,10 +71,6 @@ A cryptographic key management system that **seals every API key with AES-256-GC
 Built as the cryptographic backbone of the **VisionGaiaTechnology Sentinel ecosystem** — and now available as a standalone open-source solution for any WordPress installation.
 
 ---
-
-<img width="1158" height="515" alt="{F8E458D8-9F16-4260-A914-6B825267D9B8}" src="https://github.com/user-attachments/assets/5703444b-1efb-46cd-abd3-c131d1ee6d88" />
-
-
 
 ## ⚡ The Problem With Standard WordPress Key Storage
 
@@ -87,8 +99,9 @@ VGT Key Vault:
 │  AES-256-GCM      │  O(1) Hash Map    │  Glassmorphism UI   │
 │  GCM Auth Tag     │  Auto-Migration   │  Key Injection Form │
 │  AAD Binding      │  Auto-Heal        │  Vault Dashboard    │
-│  HKDF Key Derive  │  Index Registry   │  Delete with Nonce  │
-│  Random IV        │                   │  Status Alerts      │
+│  HKDF + 8 Salts   │  Type Guards      │  Security Headers   │
+│  Random IV        │  Index Registry   │  Delete with Nonce  │
+│  wp_hash Anchor   │                   │  i18n Ready         │
 └───────────────────┴───────────────────┴─────────────────────┘
 ```
 
@@ -118,21 +131,27 @@ WITH AAD (VGT Key Vault):
 ## 🔑 Crypto Kernel — `Crypto_Engine`
 
 ```php
-// Master Key Derivation via HKDF (not raw salt — proper key derivation)
-hash_hkdf('sha256', SECURE_AUTH_KEY, 0, 'vgt_vault_master_domain', AUTH_SALT);
+// Master Key Derivation — HKDF-SHA256 over ALL 8 WordPress salts
+// Fallback: DB-generated salt if constants missing
+// Final anchor: wp_hash() — plugin never fails on hardened configs
+hash_hkdf('sha256', $combined_salts, 0, 'vgt_vault_master_domain', $auth_salt);
 
 // Encryption with AAD Context Binding
 Crypto_Engine::encrypt($api_key, $option_name);
 
 // Decryption — verified against AAD (tamper detection built-in)
+// Throws VaultException on mismatch — catchable separately from generic errors
 Crypto_Engine::decrypt($ciphertext, $option_name);
 ```
 
-**Key Architecture:**
-- Master key derived via **HKDF-SHA256** from WordPress salts — never stored
+**Key Architecture (V3.1.0):**
+- Master key derived via **HKDF-SHA256** from **all 8 WordPress salts** — never stored
+- **DB-generated fallback salt** — plugin functions even when `wp-config.php` constants are absent or weak
+- **`wp_hash()` anchor** — last-resort safety net on any hosting configuration
 - Every encryption uses a **fresh random IV** (`random_bytes`)
 - **GCM Authentication Tag** appended — detects any modification
 - **AAD Context ID** binds ciphertext to its exact storage location
+- Typed **`VaultException`** — catchable independently of generic `\Exception` handlers
 
 ---
 
@@ -141,12 +160,16 @@ Crypto_Engine::decrypt($ciphertext, $option_name);
 ```
 O(1) Hash Map instead of O(n) Array scan:
 
-  [ "vis_api_key_groq" => true ]   ← isset() lookup: O(1)
+  [ "vis_api_key_groq"   => true ]   ← isset() lookup: O(1)
   [ "vis_api_key_openai" => true ]
   [ "vis_api_key_stripe" => true ]
 
+Type Guards (V3.1.0):
+  is_array() check before iteration   — fatal-safe on DB corruption
+  is_string() check on each entry     — no PHP warnings on malformed data
+
 Auto-Migration: Old array format detected → silently upgraded
-Auto-Heal: Option missing from DB → removed from index automatically
+Auto-Heal:      Option missing from DB → removed from index automatically
 ```
 
 ---
@@ -160,17 +183,23 @@ Auto-Heal: Option missing from DB → removed from index automatically
 ├──────────────────────┬───────────────────────────────┤
 │  Key Injection       │  Active Cryptonodes (O(1))    │
 │                      │                               │
-│  System Identifier   │  vis_api_key_groq    [Term.]  │
-│  [vis_api_key_...]   │  Hash: K7mX9pQr2nZ...         │
+│  Identifier          │  groq_api_key        [Term.]  │
+│  [groq_api_key]      │  Hash: K7mX9pQr2nZ...         │
 │                      │                               │
-│  Plaintext Token     │  vis_api_key_openai  [Term.]  │
+│  Plaintext Token     │  openai_api_key      [Term.]  │
 │  [sk-...]            │  Hash: Lp4vN8kJhFm...         │
 │                      │                               │
 │  [In Vault versiegeln]│                              │
 └──────────────────────┴───────────────────────────────┘
 ```
 
-Every action is protected:
+**V3.1.0 Admin Hardening:**
+- **Security Headers injected** on every admin page render: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-XSS-Protection: 0`
+- **Strict option name sanitization:** `preg_replace('/[^a-zA-Z0-9_\-]/', '')` — special characters and injection attempts rejected at input
+- **Enforced prefix namespace:** all keys stored under `vis_api_key_` internally — cross-namespace overwrites structurally impossible
+- **UI strips prefix:** dashboard displays `groq_api_key`, not `vis_api_key_groq` — cleaner, less error-prone
+- **Extended error codes:** `error_input` (invalid identifier) and `error_delete` (deletion failed) in addition to `error_crypto`
+- **Full i18n coverage:** all output via `esc_html_e()` / `__()` / `esc_js()` — translation-ready, XSS-safe
 - **Nonce verification** on all POST requests
 - **`manage_options` capability** check before any operation
 - **Confirmation dialog** before key termination
@@ -179,19 +208,22 @@ Every action is protected:
 
 ## 🔌 Inter-Plugin API — One Line Access
 
-Other plugins in your ecosystem retrieve keys with a single authenticated call:
+V3.1.0 simplifies the API. Pass only the identifier — the prefix is handled internally.
 
 ```php
 use VGT\Vault\API;
 
-// O(1) retrieval + AES-256-GCM decryption in one call
+// V3.0.0 (deprecated pattern — full option name required)
 $api_key = API::get_key('vis_api_key_groq');
 
-// Throws RuntimeException if key missing or tampered
+// V3.1.0 (current — identifier only, prefix added internally)
+$api_key = API::get_key('groq_api_key');
+
+// VaultException — typed, catchable separately
 try {
-    $key = API::get_key('vis_api_key_stripe');
-} catch (\RuntimeException $e) {
-    // Handle missing/compromised key
+    $key = API::get_key('stripe_api_key');
+} catch (\VGT\Vault\VaultException $e) {
+    // Key missing, tampered, or decryption failed
 }
 ```
 
@@ -219,14 +251,14 @@ WordPress Admin → Plugins → Upload Plugin → ZIP → Install → Activate
 **2. Store your first API key:**
 ```
 WordPress Admin → VGT Vault → Key Injection
-System Identifier: vis_api_key_groq
-Plaintext Token:   sk-your-key-here
+Identifier:      groq_api_key
+Plaintext Token: sk-your-key-here
 → [In Vault versiegeln]
 ```
 
 **3. Use in your plugin:**
 ```php
-$key = \VGT\Vault\API::get_key('vis_api_key_groq');
+$key = \VGT\Vault\API::get_key('groq_api_key');
 ```
 
 ---
@@ -237,12 +269,18 @@ $key = \VGT\Vault\API::get_key('vis_api_key_groq');
 |---|---|---|
 | Database encryption | ❌ Plaintext | ✅ AES-256-GCM |
 | Ciphertext Swapping protection | ❌ | ✅ AAD Context Binding |
-| Key derivation | ❌ Raw storage | ✅ HKDF-SHA256 |
+| Key derivation | ❌ Raw storage | ✅ HKDF-SHA256 over all 8 WP salts |
+| Fallback on missing salts | ❌ Fatal / empty key | ✅ DB salt + `wp_hash()` anchor |
 | Tamper detection | ❌ | ✅ GCM Auth Tag |
 | O(1) Registry lookup | ❌ | ✅ Hash Map |
-| CSRF protection | ❌ | ✅ wp_verify_nonce |
-| Inter-plugin API | ❌ | ✅ Typed facade |
-| Auto-Heal registry | ❌ | ✅ |
+| CSRF protection | ❌ | ✅ `wp_verify_nonce` |
+| Option name injection prevention | ❌ | ✅ Strict regex + prefix namespace |
+| Admin clickjacking protection | ❌ | ✅ `X-Frame-Options: DENY` |
+| MIME sniffing protection | ❌ | ✅ `X-Content-Type-Options: nosniff` |
+| Typed exception handling | ❌ | ✅ `VaultException` |
+| Registry fatal-safety | ❌ | ✅ Type guards on DB read |
+| Inter-plugin API | ❌ | ✅ Typed facade, prefix-transparent |
+| i18n / translation ready | ❌ | ✅ Full `__()` / `esc_html_e()` coverage |
 | DB dump resistance | ❌ Full compromise | ✅ Ciphertext only |
 
 ---
@@ -254,13 +292,14 @@ vgt-key-vault/
 ├── vgt-key-vault.php          ← single-file plugin
 │
 └── Inline Kernels:
-    ├── Crypto_Engine          ← AES-256-GCM + AAD + HKDF
-    ├── Vault_Registry         ← O(1) Hash Map + Auto-Migration
-    ├── Admin_Dashboard        ← UI + nonce-protected handlers
-    └── API                    ← inter-plugin facade
+    ├── Crypto_Engine          ← AES-256-GCM + AAD + HKDF (8 salts + fallback)
+    ├── Vault_Registry         ← O(1) Hash Map + Type Guards + Auto-Migration
+    ├── Admin_Dashboard        ← UI + Security Headers + i18n + nonce handlers
+    ├── VaultException         ← Typed exception class
+    └── API                    ← inter-plugin facade (prefix-transparent)
 ```
 
-**No external dependencies. No composer. No build step.**  
+**No external dependencies. No composer. No build step.**
 One PHP file. Drop it in and it works.
 
 ---
@@ -268,15 +307,19 @@ One PHP file. Drop it in and it works.
 ## ⚠️ Important Security Notice
 
 ```
-⚠️  VGT Key Vault derives its master key from WordPress salts.
+⚠️  VGT Key Vault derives its master key from all 8 WordPress salts.
 
-    If you change AUTH_SALT or SECURE_AUTH_KEY in wp-config.php,
+    If you change any salt constant in wp-config.php,
     ALL stored ciphertexts become permanently unreadable.
 
     Before migration or salt rotation:
     1. Decrypt and export all keys from the Vault Dashboard
-    2. Rotate salts
-    3. Re-import keys into the new Vault
+    2. Rotate salts in wp-config.php
+    3. Re-import keys into the new Vault instance
+
+    Note: If wp-config.php constants are absent or empty,
+    V3.1.0 automatically falls back to a DB-stored salt and wp_hash().
+    The plugin will not crash on hardened or non-standard configurations.
 ```
 
 ---
@@ -290,14 +333,14 @@ git clone https://github.com/VisionGaiaTechnology/wpkeyvault
 cd vgt-key-vault
 ```
 
-**Found a vulnerability?**  
+**Found a vulnerability?**
 Report via the **VGT Sentinel Operative Registry** — responsible disclosure is rewarded.
 
 ---
 
 ## ☕ Support the Project
 
-VGT Key Vault is free and open-source under AGPLv3.  
+VGT Key Vault is free and open-source under AGPLv3.
 If it saved you time, money, or a security incident — consider supporting:
 
 <div align="center">
@@ -312,7 +355,7 @@ If it saved you time, money, or a security incident — consider supporting:
 
 **AGPLv3 License** · © 2026 VisionGaia Technology · Cologne, Germany
 
-Anyone using and modifying this plugin must publish changes under AGPLv3.  
+Anyone using and modifying this plugin must publish changes under AGPLv3.
 Commercial use permitted. Attribution required.
 
 ---
@@ -330,4 +373,4 @@ No plaintext. No compromise. No exceptions.
 
 *VISIONGAIATECHNOLOGY – WE ARCHITECT THE FUTURE OF SECURITY.*
 
-</div
+</div>
