@@ -1,0 +1,296 @@
+:root {
+    --vgt-bg: #09090b;
+    --vgt-surface: #121216;
+    --vgt-border: rgba(255, 255, 255, 0.08);
+    --vgt-accent: #00e5ff;
+    --vgt-accent-glow: rgba(0, 229, 255, 0.2);
+    --vgt-danger: #ef4444;
+    --vgt-text-main: #f8fafc;
+    --vgt-text-muted: #94a3b8;
+    --vgt-success: #10b981;
+}
+
+.vgt-vault-matrix {
+    max-width: 1200px;
+    margin: 30px auto 30px 10px;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--vgt-text-main);
+    background: var(--vgt-bg);
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--vgt-border);
+}
+
+.vgt-vault-matrix * {
+    box-sizing: border-box;
+}
+
+.vgt-header {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid var(--vgt-border);
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.vgt-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 150px;
+    height: 1px;
+    background: var(--vgt-accent);
+    box-shadow: 0 0 15px var(--vgt-accent);
+}
+
+.vgt-icon-shield {
+    width: 56px;
+    height: 56px;
+    background: var(--vgt-accent-glow);
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--vgt-accent);
+}
+
+.vgt-header-text h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+}
+
+.vgt-header-text p {
+    margin: 4px 0 0;
+    color: var(--vgt-text-muted);
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vgt-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: inline-block;
+}
+
+.vgt-badge-pqc {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--vgt-success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
+}
+
+.vgt-badge-classic {
+    background: rgba(0, 229, 255, 0.1);
+    color: var(--vgt-accent);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+}
+
+.vgt-grid-layout {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 32px;
+    align-items: start;
+}
+
+@media (max-width: 960px) {
+    .vgt-grid-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.vgt-panel {
+    background: var(--vgt-surface);
+    border: 1px solid var(--vgt-border);
+    border-radius: 12px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+}
+
+.vgt-panel h3 {
+    margin: 0 0 24px 0;
+    font-size: 1.1rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+}
+
+.vgt-control {
+    margin-bottom: 20px;
+}
+
+.vgt-label {
+    display: block;
+    color: var(--vgt-text-muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+}
+
+.vgt-input {
+    width: 100%;
+    background: #000;
+    border: 1px solid var(--vgt-border);
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.vgt-input:focus {
+    border-color: var(--vgt-accent);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--vgt-accent-glow);
+}
+
+.vgt-btn {
+    width: 100%;
+    background: var(--vgt-text-main);
+    color: #000;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.vgt-btn:hover {
+    background: var(--vgt-accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--vgt-accent-glow);
+}
+
+.vgt-btn-danger {
+    background: transparent;
+    color: var(--vgt-danger);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.vgt-btn-danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--vgt-danger);
+    color: var(--vgt-danger);
+}
+
+.vgt-key-stream {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.vgt-key-node {
+    background: #000;
+    border: 1px solid var(--vgt-border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: border-color 0.2s;
+}
+
+.vgt-key-node:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.vgt-key-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+}
+
+.vgt-key-id {
+    color: var(--vgt-text-main);
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+}
+
+.vgt-key-hash {
+    color: var(--vgt-accent);
+    font-size: 0.75rem;
+    font-family: monospace;
+    opacity: 0.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+}
+
+.vgt-empty-state {
+    color: var(--vgt-text-muted);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 20px;
+    border: 1px dashed var(--vgt-border);
+    border-radius: 8px;
+}
+
+.vgt-alert {
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+}
+
+.vgt-alert-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.vgt-alert-warn {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.vgt-alert-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.vgt-micro-copy {
+    font-size: 0.75rem;
+    color: var(--vgt-text-muted);
+    margin-top: 16px;
+    line-height: 1.5;
+}
